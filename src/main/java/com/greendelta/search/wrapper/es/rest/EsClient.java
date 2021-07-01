@@ -34,6 +34,7 @@ import org.elasticsearch.script.ScriptType;
 import com.greendelta.search.wrapper.SearchClient;
 import com.greendelta.search.wrapper.SearchQuery;
 import com.greendelta.search.wrapper.SearchResult;
+import com.greendelta.search.wrapper.es.rest.EsSearch;
 
 public class EsClient implements SearchClient {
 
