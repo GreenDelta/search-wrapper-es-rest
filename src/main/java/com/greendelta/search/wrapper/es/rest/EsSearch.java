@@ -31,6 +31,7 @@ import org.elasticsearch.index.query.functionscore.FunctionScoreQueryBuilder.Fil
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.bucket.nested.ParsedNested;
+import org.elasticsearch.search.aggregations.bucket.nested.ParsedReverseNested;
 import org.elasticsearch.search.aggregations.bucket.range.ParsedRange;
 import org.elasticsearch.search.aggregations.bucket.terms.DoubleTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.LongTerms;
@@ -334,10 +335,10 @@ class EsSearch {
 	private static List<AggregationResult> toResults(List<Aggregation> aggregations) {
 		List<AggregationResult> results = new ArrayList<>();
 		for (Aggregation aggregation : aggregations) {
-			if (!aggregation.getType().equals(NESTED_TYPE)) {
-				results.add(toResult(aggregation));
-			} else {
+			if (aggregation.getType().equals(NESTED_TYPE)) {
 				results.addAll(toResults(((ParsedNested) aggregation).getAggregations().asList()));
+			} else {
+				results.add(toResult(aggregation));
 			}
 		}
 		return results;
@@ -372,8 +373,9 @@ class EsSearch {
 		case LongTerms.NAME:
 		case DoubleTerms.NAME:
 			for (Bucket bucket : getTermBuckets(aggregation)) {
-				builder.addEntry(new AggregationResultEntry(bucket.getKeyAsString(), bucket.getDocCount()));
-				totalCount += bucket.getDocCount();
+				long count = getCount(bucket.getDocCount(), bucket.getAggregations().asList());
+				builder.addEntry(new AggregationResultEntry(bucket.getKeyAsString(), count));
+				totalCount += count;
 			}
 			builder.totalCount(totalCount);
 			break;
@@ -381,8 +383,9 @@ class EsSearch {
 			for (org.elasticsearch.search.aggregations.bucket.range.Range.Bucket bucket : ((ParsedRange) aggregation)
 					.getBuckets()) {
 				Object[] data = new Object[] { bucket.getFrom(), bucket.getTo() };
-				builder.addEntry(new AggregationResultEntry(bucket.getKeyAsString(), bucket.getDocCount(), data));
-				totalCount += bucket.getDocCount();
+				long count = getCount(bucket.getDocCount(), bucket.getAggregations().asList());
+				builder.addEntry(new AggregationResultEntry(bucket.getKeyAsString(), count, data));
+				totalCount += count;
 			}
 			builder.totalCount(totalCount);
 			break;
@@ -400,6 +403,13 @@ class EsSearch {
 		default:
 			return new ArrayList<>();
 		}
+	}
+
+	private static long getCount(long bucketCount, List<Aggregation> aggregations) {
+		for (Aggregation aggregation : aggregations)
+			if (aggregation instanceof ParsedReverseNested)
+				return ((ParsedReverseNested) aggregation).getDocCount();
+		return bucketCount;
 	}
 
 	private static void extendResultInfo(SearchResult<Map<String, Object>> result, long totalHits,
