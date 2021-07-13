@@ -10,8 +10,14 @@
 
 		<dependency>
 			<groupId>com.greendelta.search</groupId>
-			<artifactId>search-wrapper</artifactId>
+			<artifactId>search-wrapper-es</artifactId>
 			<version>1.1.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.elasticsearch</groupId>
+					<artifactId>elasticsearch</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>

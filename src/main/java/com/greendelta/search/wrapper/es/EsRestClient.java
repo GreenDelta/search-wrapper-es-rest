@@ -1,4 +1,4 @@
-package com.greendelta.search.wrapper.es.rest;
+package com.greendelta.search.wrapper.es;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,26 +34,34 @@ import org.elasticsearch.script.ScriptType;
 import com.greendelta.search.wrapper.SearchClient;
 import com.greendelta.search.wrapper.SearchQuery;
 import com.greendelta.search.wrapper.SearchResult;
-import com.greendelta.search.wrapper.es.rest.EsSearch;
+import com.greendelta.search.wrapper.es.Search;
+import com.greendelta.search.wrapper.es.Search.EsRequest;
 
-public class EsClient implements SearchClient {
+public class EsRestClient implements SearchClient {
 
 	private final RestHighLevelClient client;
 	private final String indexName;
 
-	public EsClient(RestHighLevelClient client, String indexName) {
+	public EsRestClient(RestHighLevelClient client, String indexName) {
 		this.client = client;
 		this.indexName = indexName;
 	}
 
 	@Override
 	public SearchResult<Map<String, Object>> search(SearchQuery searchQuery) {
-		return EsSearch.search(searchQuery, client, indexName);
+		try {
+			EsRequest request = new RestRequest(client, indexName);
+			return Search.run(request, searchQuery);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new SearchResult<>();
+		}
 	}
 
 	@Override
 	public Set<String> searchIds(SearchQuery searchQuery) {
-		return EsSearch.searchIds(searchQuery, client, indexName);
+		EsRequest request = new RestRequest(client, indexName);
+		return Search.ids(request, searchQuery);
 	}
 
 	@Override
